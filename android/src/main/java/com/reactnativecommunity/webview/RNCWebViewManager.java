@@ -79,6 +79,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -143,6 +144,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected static final String HTML_MIME_TYPE = "text/html";
   protected static final String JAVASCRIPT_INTERFACE = "ReactNativeWebView";
   protected static final String HTTP_METHOD_POST = "POST";
+  protected static final int[] NON_INJECTABLE_RESPONSE_CODES = [ 405 ];
   // Use `webView.loadUrl("about:blank")` to reliably reset the view
   // state and release page resources (including any running JavaScript).
   protected static final String BLANK_URL = "about:blank";
@@ -225,7 +227,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return false;
     }
     final String contentTypeAndCharset = response.header(HEADER_CONTENT_TYPE, MIME_UNKNOWN);
-    return contentTypeAndCharset.startsWith(MIME_TEXT_HTML);
+    final int statusCode = response.code();
+    boolean statusCodeNotInjectable = Arrays.asList(NON_INJECTABLE_RESPONSE_CODES).contains(statusCode);
+    boolean requiresJSInjection = !statusCodeNotInjectable && contentTypeAndCharset.startsWith(MIME_TEXT_HTML);
+    return requiresJSInjection;
   }
 
 
