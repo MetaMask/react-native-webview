@@ -228,19 +228,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     final int responseCode = response.code();
 
     String responseBody = "";
-    String contentTypeAndCharset = "";
 
     try {
       assert response.body() != null;
-      responseBody = response.body().string();
+      responseBody = response.peekBody(Long.MAX_VALUE).string();
     } catch (IOException e) {
       e.printStackTrace();
       return false;
     }
 
-    boolean responseBodyContainsHTMLLikeString = responseBody.matches("[\\S\\s]*\\<[a-z]+[\\S\\s]*\>[\\S\\s]*");
+    boolean responseBodyContainsHTMLLikeString = responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*");
     boolean responseCodeIsInjectible = responseCode == 200;
-    boolean contentTypeIsHtml = contentTypeAndCharset.startsWith(MIME_TEXT_HTML)
+    boolean contentTypeIsHtml = contentTypeAndCharset.startsWith(MIME_TEXT_HTML);
 
     boolean requiresJSInjection = responseBodyContainsHTMLLikeString && responseCodeIsInjectible && contentTypeIsHtml;
     return requiresJSInjection;
