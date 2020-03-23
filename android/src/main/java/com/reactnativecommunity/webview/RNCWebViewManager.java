@@ -135,6 +135,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_INJECT_JAVASCRIPT = 6;
   public static final int COMMAND_LOAD_URL = 7;
   public static final int COMMAND_FOCUS = 8;
+  protected static final long BYTES_IN_MEGABYTE = 1000000;
   protected static final String REACT_CLASS = "RNCWebView";
   protected final static String HEADER_CONTENT_TYPE = "content-type";
   protected static final String MIME_TEXT_HTML = "text/html";
@@ -227,22 +228,25 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     final String contentTypeAndCharset = response.header(HEADER_CONTENT_TYPE, MIME_UNKNOWN);
     final int responseCode = response.code();
 
+    boolean contentTypeIsHtml = contentTypeAndCharset.startsWith(MIME_TEXT_HTML);
+    boolean responseCodeIsInjectible = responseCode == 200;
     String responseBody = "";
 
-    try {
-      assert response.body() != null;
-      responseBody = response.peekBody(Long.MAX_VALUE).string();
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (contentTypeIsHtml && responseCodeIsInjectible) {
+      try {
+        assert response.body() != null;
+        responseBody = response.peekBody(BYTES_IN_MEGABYTE).string();
+      } catch (IOException e) {
+        e.printStackTrace();
+        return false;
+      }
+
+
+      boolean responseBodyContainsHTMLLikeString = responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*");
+      return responseBodyContainsHTMLLikeString;
+    } else {
       return false;
     }
-
-    boolean responseBodyContainsHTMLLikeString = responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*");
-    boolean responseCodeIsInjectible = responseCode == 200;
-    boolean contentTypeIsHtml = contentTypeAndCharset.startsWith(MIME_TEXT_HTML);
-
-    boolean requiresJSInjection = responseBodyContainsHTMLLikeString && responseCodeIsInjectible && contentTypeIsHtml;
-    return requiresJSInjection;
   }
 
 
